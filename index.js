@@ -59,4 +59,12 @@ server.post("/projects/:id/tasks", checkIfProjectExist, (req, res) => {
 
   return res.status(200).json({ message: "Task added." });
 });
+
+server.delete("/projects/:id", checkIfProjectExist, (req, res) => {
+  const { projectIndex } = req;
+
+  projects.splice(projectIndex, 1);
+
+  return res.send();
+});
 server.listen(3000);
