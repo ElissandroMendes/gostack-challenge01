@@ -2,13 +2,30 @@ const express = require("express");
 
 const server = express();
 server.use(express.json());
+server.use(countNumberRequests);
 
 const projects = [];
+let numberRequisitions = 0;
+
+function countNumberRequests(req, res, next) {
+  console.log("#Requests", ++numberRequisitions);
+  return next();
+}
 
 function findProjectIndex(id) {
   return projects.findIndex(v => {
     return v.id == id;
   });
+}
+
+function checkIfProjectExist(req, res, next) {
+  const { id } = req.params;
+  let index = findProjectIndex(id);
+  if (index == -1) {
+    return res.status(404).json({ message: "Project not found." });
+  }
+  req.projectIndex = index;
+  return next();
 }
 
 server.get("/projects", (req, res) => {
@@ -17,7 +34,6 @@ server.get("/projects", (req, res) => {
 
 server.post("/projects", (req, res) => {
   const { id, title } = req.body;
-
   projects.push({
     id,
     title,
@@ -26,37 +42,21 @@ server.post("/projects", (req, res) => {
   return res.status(200).json({ message: "Project created" });
 });
 
-server.put("/projects/:id", (req, res) => {
-  const { id } = req.params;
+server.put("/projects/:id", checkIfProjectExist, (req, res) => {
+  const { projectIndex } = req;
   const { title } = req.body;
 
-  const projectIndex = findProjectIndex(id);
+  projects[projectIndex].title = title;
 
-  console.log("index", projectIndex);
-  let status = 200;
-  let message = "Project title changed.";
-  if (projectIndex !== -1) {
-    projects[projectIndex].title = title;
-  } else {
-    status = 404;
-    message = "Project not found.";
-  }
-  return res.status(status).json({ message });
+  return res.status(200).json({ message: "Project title changed." });
 });
 
-server.post("/projects/:id/tasks", (req, res) => {
-  const { id } = req.params;
+server.post("/projects/:id/tasks", checkIfProjectExist, (req, res) => {
+  const { projectIndex } = req;
   const { title } = req.body;
 
-  const projectIndex = findProjectIndex(id);
-  let status = 200;
-  let message = "Task added.";
-  if (projectIndex !== -1) {
-    projects[projectIndex].tasks.push(title);
-  } else {
-    status = 404;
-    message = "Project not found.";
-  }
-  return res.status(status).json({ message });
+  projects[projectIndex].tasks.push(title);
+
+  return res.status(200).json({ message: "Task added." });
 });
 server.listen(3000);
